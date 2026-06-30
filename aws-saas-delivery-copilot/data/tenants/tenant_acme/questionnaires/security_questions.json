@@ -1,0 +1,14 @@
+﻿[
+{
+"question": "Is customer data encrypted at rest and in transit?",
+"expected_source": "security_policy.md"
+},
+{
+"question": "What is the incident response time for critical incidents?",
+"expected_source": "security_policy.md"
+},
+{
+"question": "Does the platform expose APIs for integrations?",
+"expected_source": "product_faq.md"
+}
+]
