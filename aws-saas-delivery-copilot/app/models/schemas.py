@@ -69,3 +69,53 @@ class RagAskResponse(BaseModel):
     sources: list[RagSource]
     retrieved_chunks: list[RetrievedChunk]
     top_k: int
+
+
+class SecurityQuestionnaireItem(BaseModel):
+    question: str
+    draft_answer: str
+    sources: list[RagSource]
+    confidence_hint: str
+
+
+class FeedbackAnalysisResponse(BaseModel):
+    total_feedbacks: int
+    top_themes: list[str]
+    positive_signals: list[str]
+    pain_points: list[str]
+    opportunities: list[str]
+    executive_summary: str
+
+
+class CostEstimateResponse(BaseModel):
+    input_tokens: int = Field(ge=0)
+    output_tokens: int = Field(ge=0)
+    input_price_per_1k: float = Field(ge=0)
+    output_price_per_1k: float = Field(ge=0)
+    input_cost: float = Field(ge=0)
+    output_cost: float = Field(ge=0)
+    total_cost: float = Field(ge=0)
+    note: str
+
+
+class WellArchitectedFinding(BaseModel):
+    pillar: str
+    finding: str
+    risk_level: str
+    recommendation: str
+
+
+class ToolResult(BaseModel):
+    tool_name: str
+    result: dict | list | str
+
+
+class AgentTaskRequest(BaseModel):
+    task_type: str = Field(min_length=1)
+    payload: dict = Field(default_factory=dict)
+
+
+class AgentTaskResponse(BaseModel):
+    tenant_id: str
+    task_type: str
+    tool_result: ToolResult

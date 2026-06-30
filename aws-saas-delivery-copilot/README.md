@@ -4,9 +4,9 @@ Portfolio project for an AI Engineer Jr/Pleno interview context, inspired by AWS
 
 The goal is to simulate a GenAI delivery copilot for a consulting team: a multi-tenant platform that combines RAG with sources, AI agents with tools, feedback analysis, security questionnaire support, status reports, cost estimates, evaluation and an AWS-ready architecture.
 
-## Current Stage: Stage 2 Local Multi-Tenant RAG
+## Current Stage: Stage 3 Deterministic Agent Toolkit
 
-This repository is currently in Stage 2. The implementation includes a local RAG foundation, but it intentionally does not include LangGraph agents, MCP, Bedrock calls or AWS deployment yet.
+This repository is currently in Stage 3. The implementation includes a local RAG foundation and a deterministic agent toolkit for AWS/SaaS consulting workflows. It intentionally does not include LangGraph agents, MCP, Bedrock calls or AWS deployment yet.
 
 Stage 1 delivered:
 
@@ -25,9 +25,16 @@ Stage 2 adds:
 - FastAPI endpoints for ingestion and asking questions.
 - Mock/extractive answer generation with retrieved sources.
 
-## Why Mock/Extractive Mode
+Stage 3 adds:
 
-The current answer generation does not call an LLM. It builds a draft answer from the most relevant retrieved chunks. This keeps the project easy to run locally and makes retrieval quality visible before adding a generative model.
+- A simple agent orchestrator for deterministic task routing.
+- Agent tools for knowledge search, security questionnaire drafting, feedback analysis, status reports, cost estimates and Well-Architected style assessment.
+- A FastAPI endpoint for running agent tasks.
+- Documentation for how each tool maps to AWS/SaaS consulting workflows.
+
+## Why Local Deterministic Mode
+
+The current RAG answer generation does not call an LLM. It builds a draft answer from the most relevant retrieved chunks. The agent also does not use autonomous planning yet; it routes known task types to explicit tools. This keeps the project easy to run locally, testable and demo-friendly before adding Bedrock, MCP or LangGraph.
 
 In a later AWS-ready stage, this layer can be replaced with:
 
@@ -35,6 +42,8 @@ In a later AWS-ready stage, this layer can be replaced with:
 - S3 as the source document store instead of local tenant folders.
 - OpenSearch Serverless, Aurora pgvector or another managed vector store instead of local JSON.
 - Bedrock chat/inference models for grounded final answers.
+- LangGraph for multi-step planning and stateful workflows.
+- MCP tools for external systems such as ticketing, CRM, documents or cloud APIs.
 
 ## Planned Architecture
 
@@ -56,6 +65,7 @@ The planned production-style architecture is:
 app/
   core/              # settings and tenant data loading
   models/            # Pydantic schemas
+  agent/             # deterministic tools and task orchestrator
   rag/               # chunking, embeddings, vector store and RAG service
   main.py            # FastAPI application
 data/
@@ -90,6 +100,7 @@ http://127.0.0.1:8000/docs
 | GET | `/tenants/{tenant_id}/summary` | Counts local tenant documents, feedback items and security questions. |
 | POST | `/tenants/{tenant_id}/rag/ingest` | Chunks and indexes tenant documents into the local vector store. |
 | POST | `/tenants/{tenant_id}/rag/ask` | Retrieves relevant chunks and returns an extractive answer with sources. |
+| POST | `/tenants/{tenant_id}/agent/run` | Runs one deterministic agent task for the tenant. |
 
 ## RAG Usage
 
@@ -154,6 +165,74 @@ curl -X POST http://127.0.0.1:8000/tenants/tenant_acme/rag/ask ^
 
 This should return `product_faq.md` as the top source.
 
+## Agent Toolkit Usage
+
+Supported `task_type` values:
+
+- `knowledge_search`
+- `security_questionnaire`
+- `feedback_analysis`
+- `status_report`
+- `cost_estimate`
+- `well_architected_assessment`
+
+Security questionnaire:
+
+```bash
+curl -X POST http://127.0.0.1:8000/tenants/tenant_acme/agent/run ^
+  -H "Content-Type: application/json" ^
+  -d "{\"task_type\":\"security_questionnaire\",\"payload\":{}}"
+```
+
+Knowledge search:
+
+```bash
+curl -X POST http://127.0.0.1:8000/tenants/tenant_acme/agent/run ^
+  -H "Content-Type: application/json" ^
+  -d "{\"task_type\":\"knowledge_search\",\"payload\":{\"question\":\"Does the platform expose APIs for integrations?\",\"top_k\":3}}"
+```
+
+Status report:
+
+```bash
+curl -X POST http://127.0.0.1:8000/tenants/tenant_acme/agent/run ^
+  -H "Content-Type: application/json" ^
+  -d "{\"task_type\":\"status_report\",\"payload\":{\"project_name\":\"ACME SaaS Delivery Copilot\",\"progress\":[\"RAG ingestion implemented\",\"Tenant summary endpoint implemented\"],\"blockers\":[\"Bedrock integration pending\"],\"next_steps\":[\"Add Bedrock provider\",\"Add MCP server\"],\"risks\":[\"Scope creep before interview\"]}}"
+```
+
+Cost estimate:
+
+```bash
+curl -X POST http://127.0.0.1:8000/tenants/tenant_acme/agent/run ^
+  -H "Content-Type: application/json" ^
+  -d "{\"task_type\":\"cost_estimate\",\"payload\":{\"input_tokens\":1200,\"output_tokens\":300}}"
+```
+
+Feedback analysis:
+
+```bash
+curl -X POST http://127.0.0.1:8000/tenants/tenant_acme/agent/run ^
+  -H "Content-Type: application/json" ^
+  -d "{\"task_type\":\"feedback_analysis\",\"payload\":{}}"
+```
+
+Well-Architected assessment:
+
+```bash
+curl -X POST http://127.0.0.1:8000/tenants/tenant_acme/agent/run ^
+  -H "Content-Type: application/json" ^
+  -d "{\"task_type\":\"well_architected_assessment\",\"payload\":{}}"
+```
+
+## How This Maps To AWS Consulting Workflows
+
+- Knowledge search maps to consultant Q&A over client-approved project documentation.
+- Security questionnaire drafting maps to vendor/security review acceleration with source-backed answers.
+- Feedback analysis maps to customer discovery, product insights and executive readouts.
+- Status reports map to weekly client delivery communication.
+- Cost estimates map to early GenAI usage planning and stakeholder expectation setting.
+- Well-Architected assessment maps to architecture review conversations across the six AWS pillars.
+
 ## Tests
 
 ```bash
@@ -164,9 +243,9 @@ python -m pytest
 
 1. Stage 1: foundation with FastAPI, schemas, local tenant data loading and tests.
 2. Stage 2: local multi-tenant RAG with chunking, embeddings, vector store and extractive answers.
-3. Stage 3: stronger retrieval evaluation, prompt templates and Bedrock-ready model interfaces.
-4. Stage 4: feedback analysis pipeline and customer-facing insights.
-5. Stage 5: security questionnaire assistant.
-6. Stage 6: agent orchestration for reports, estimates and delivery workflows.
+3. Stage 3: deterministic agent toolkit for consulting workflows.
+4. Stage 4: stronger retrieval evaluation, prompt templates and Bedrock-ready model interfaces.
+5. Stage 5: feedback analysis pipeline and customer-facing insights.
+6. Stage 6: security questionnaire assistant improvements.
 7. Stage 7: evaluation, observability and cost tracking.
 8. Stage 8: AWS architecture and deployment blueprint.

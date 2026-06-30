@@ -1,8 +1,11 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
+from app.agent.orchestrator import run_agent_task
 from app.core.config import settings
 from app.core.tenant_loader import get_tenant_summary
 from app.models.schemas import (
+    AgentTaskRequest,
+    AgentTaskResponse,
     HealthResponse,
     RagAskRequest,
     RagAskResponse,
@@ -55,3 +58,15 @@ def rag_ask(tenant_id: str, request: RagAskRequest) -> RagAskResponse:
         question=request.question,
         top_k=request.top_k,
     )
+
+
+@app.post("/tenants/{tenant_id}/agent/run", response_model=AgentTaskResponse)
+def agent_run(tenant_id: str, request: AgentTaskRequest) -> AgentTaskResponse:
+    try:
+        return run_agent_task(
+            tenant_id=tenant_id,
+            task_type=request.task_type,
+            payload=request.payload,
+        )
+    except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
