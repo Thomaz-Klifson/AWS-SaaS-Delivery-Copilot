@@ -1,64 +1,44 @@
-# Architecture Diagram
+# Diagrama de Arquitetura
 
 ```mermaid
-flowchart TB
-    user[Client / Consultant] --> api[FastAPI API]
+flowchart TD
+    A[Consultor ou usuário] --> B[API FastAPI]
 
-    api --> tenant_loader[Tenant Loader]
-    tenant_loader --> local_data[(Local Tenant Data)]
-    local_data --> docs[Documents]
-    local_data --> feedback[Feedback CSV]
-    local_data --> questionnaire[Security Questions]
+    B --> C[Dados do cliente ACME]
+    C --> C1[Documentos]
+    C --> C2[Feedbacks]
+    C --> C3[Questionário de segurança]
 
-    api --> rag[RAG Service]
-    rag --> chunking[Chunking]
-    rag --> embeddings[Local Embeddings]
-    rag --> vector[(Local Vector Store)]
-    rag --> llm[LLM Provider]
+    B --> D[Busca baseada em documentos]
+    D --> D1[Quebra dos textos em pedaços]
+    D1 --> D2[Transformação dos textos em números]
+    D2 --> D3[Armazenamento vetorial local]
+    D3 --> D4[Resposta com fontes]
 
-    llm --> mock[Mock Provider]
-    llm --> bedrock[Bedrock Provider - Optional]
+    B --> E[Agente com ferramentas]
+    E --> E1[Busca de conhecimento]
+    E --> E2[Questionário de segurança]
+    E --> E3[Análise de feedback]
+    E --> E4[Relatório de status]
+    E --> E5[Estimativa de custo]
+    E --> E6[Avaliação de arquitetura AWS]
 
-    api --> agent[Agent Orchestrator]
-    agent --> tools[Consulting Tools]
-    tools --> knowledge[Knowledge Search]
-    tools --> security[Security Questionnaire]
-    tools --> feedback_tool[Feedback Analysis]
-    tools --> status[Status Report]
-    tools --> cost[Cost Estimate]
-    tools --> wa[Well-Architected Assessment]
+    B --> F[Camada de modelo de linguagem]
+    F --> F1[Modo local sem custo]
+    F --> F2[Amazon Bedrock opcional]
 
-    api --> mcp[MCP-style Interface]
-    mcp --> registry[Tool Registry + JSON Schemas]
-    mcp --> agent
+    B --> G[Interface estilo MCP]
+    G --> G1[Listagem de ferramentas]
+    G --> G2[Chamada de ferramentas]
 
-    subgraph Future AWS Deployment
-        s3[(S3 Documents by Tenant)]
-        managed_vector[(OpenSearch / pgvector)]
-        dynamo[(DynamoDB / RDS Metadata)]
-        sqs[SQS Batch Jobs]
-        cw[CloudWatch Logs + Metrics]
-        secrets[Secrets Manager]
-        iam[IAM Least Privilege]
-        compute[ECS Fargate / Lambda]
-        gateway[API Gateway / CloudFront]
-    end
-
-    docs -. future .-> s3
-    vector -. future .-> managed_vector
-    tenant_loader -. future .-> dynamo
-    api -. future .-> compute
-    compute -. optional .-> gateway
-    api -. observability .-> cw
-    api -. secrets .-> secrets
-    api -. permissions .-> iam
-    rag -. async ingestion .-> sqs
-    bedrock -. AWS runtime .-> llm
+    H[Amazon S3] -. produção .-> C
+    I[Amazon Bedrock] -. produção .-> F2
+    J[CloudWatch, IAM e banco vetorial gerenciado] -. evolução futura .-> B
 ```
 
-## Notes
-
-- The current project runs locally by default.
-- Bedrock is optional and manual.
-- The MCP layer is MCP-style for demonstration, not a full official SDK server.
-- Future AWS components are intentionally represented as deployment targets, not implemented infrastructure.
+## Observações
+- O projeto roda localmente por padrão.
+- O Amazon Bedrock é opcional e manual.
+- O Amazon S3 foi preparado com arquivos de exemplo do cliente.
+- A camada MCP é uma demonstração no estilo MCP, não um servidor oficial completo.
+- Os demais componentes AWS aparecem como plano de produção, não como infraestrutura já implantada.
