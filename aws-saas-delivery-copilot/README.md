@@ -4,9 +4,26 @@ Portfolio project for an AI Engineer Jr/Pleno interview context, inspired by AWS
 
 The goal is to simulate a GenAI delivery copilot for a consulting team: a multi-tenant platform that combines RAG with sources, AI agents with tools, feedback analysis, security questionnaire support, status reports, cost estimates, evaluation and an AWS-ready architecture.
 
-## Current Stage: Stage 5 MCP-Style Tool Interface
+## Pitch
 
-This repository is currently in Stage 5. The implementation includes a local RAG foundation, a deterministic agent toolkit, an LLM provider layer with mock mode by default plus optional Amazon Bedrock Converse support, and an MCP-style tool interface. It intentionally does not include LangGraph agents or AWS deployment yet.
+AWS SaaS Delivery Copilot is a portfolio-grade GenAI platform that simulates a real AWS consulting delivery for a SaaS customer.
+
+It demonstrates how an AI Engineer can combine FastAPI, RAG, source-grounded answers, deterministic agent tools, Bedrock-ready provider abstraction, MCP-style tool contracts and AWS production planning into one coherent consulting workflow.
+
+## Current Stage: Stage 6 Presentation Polish
+
+This repository is currently in Stage 6. The implementation includes a local RAG foundation, a deterministic agent toolkit, an LLM provider layer with mock mode by default plus optional Amazon Bedrock Converse support, an MCP-style tool interface and interview-ready documentation. It intentionally does not include LangGraph agents or AWS deployment yet.
+
+## Why This Project Is Aligned With AWS/GenAI Consulting
+
+- It starts from a realistic SaaS customer scenario rather than a generic chatbot.
+- It uses source-backed RAG for security, product and delivery knowledge.
+- It includes delivery artifacts consultants produce: status reports, security questionnaire drafts, cost estimates and architecture assessments.
+- It keeps AWS integration practical: Bedrock-ready provider, S3/OpenSearch/pgvector production path and IaC placeholders.
+- It shows trade-off awareness: mock vs Bedrock, deterministic tools vs autonomous agents, MCP-style vs official MCP server.
+- It is testable locally, which matters for maintainability and client delivery confidence.
+
+## Implemented Stages
 
 Stage 1 delivered:
 
@@ -48,6 +65,62 @@ Stage 5 adds:
 - Demo endpoints for listing and calling tools.
 - Documentation explaining that this is MCP-compatible in style, not a full official MCP SDK server.
 
+Stage 6 adds:
+
+- Interview/demo documentation.
+- Mermaid architecture diagram.
+- Trade-off notes.
+- AWS production plan.
+- Final checklist.
+- PowerShell demo request script.
+
+## Demo In 3 Minutes
+
+1. Start the API:
+
+```bash
+python -m uvicorn app.main:app --reload
+```
+
+2. Run the demo script in another PowerShell session:
+
+```powershell
+.\scripts\demo_requests.ps1
+```
+
+3. Talk through the flow:
+
+- `/health` proves the API is running.
+- Tenant summary proves multi-tenant local data loading.
+- RAG ask shows grounded answers and sources.
+- Agent tools show consulting workflows.
+- MCP-style calls show tool discovery and standardized execution.
+- `/llm/test` shows mock provider behavior without external cost.
+
+Full script: `docs/demo_script.md`.
+
+## What I Would Improve In Production
+
+- Add authentication and tenant authorization.
+- Move documents to S3 with tenant-scoped prefixes and encryption.
+- Replace local vector store with OpenSearch Serverless or pgvector.
+- Add Bedrock embeddings and production Bedrock model routing.
+- Add structured evaluation for retrieval quality, grounding and answer quality.
+- Add CloudWatch logs, metrics, traces and token/cost dashboards.
+- Add async ingestion with SQS and worker jobs.
+- Move MCP-style layer to the official MCP SDK.
+- Add Terraform/Pulumi modules for AWS deployment.
+
+## Interview Talking Points
+
+- RAG reduces hallucination by retrieving approved tenant sources and returning citations.
+- Mock mode is intentional: it keeps automated tests deterministic and avoids cloud cost.
+- Bedrock is optional but integrated through a provider abstraction.
+- The agent is deterministic first because tool contracts and evaluation should come before autonomy.
+- MCP-style demonstrates tool discovery and schemas without adding protocol complexity too early.
+- The architecture is local-first but maps directly to S3, Bedrock, OpenSearch/pgvector, ECS/Lambda, SQS and CloudWatch.
+- Current limitations are explicit: simplified tenant isolation, local vector store, no auth and no official MCP server yet.
+
 ## Why Local Deterministic Mode
 
 The default `LLM_PROVIDER=mock` does not call external services. It produces deterministic local responses from the retrieved context and simulates token usage. The agent also does not use autonomous planning yet; it routes known task types to explicit tools. The MCP-style layer exposes those tools with JSON schemas and JSON-RPC shaped calls, but it is not a full official MCP server. This keeps the project easy to run locally, testable and demo-friendly before adding production Bedrock workflows, official MCP SDK support or LangGraph.
@@ -74,6 +147,17 @@ The planned production-style architecture is:
 7. Evaluation layer for answer quality and grounding.
 8. Observability for traces, latency, cost and quality metrics.
 9. AWS-ready deployment using services such as Amazon Bedrock, S3, SQS, DynamoDB/RDS and IaC.
+
+## Documentation For Interview Review
+
+- `docs/demo_script.md`: 3-minute demo talk track.
+- `docs/architecture_diagram.md`: Mermaid architecture diagram.
+- `docs/tradeoffs.md`: engineering trade-offs and rationale.
+- `docs/interview_qa.md`: short interview questions and answers.
+- `docs/aws_production_plan.md`: AWS production migration plan.
+- `docs/mcp_interface.md`: MCP-style interface details.
+- `docs/agent_tools.md`: agent tool contracts and evolution path.
+- `docs/final_checklist.md`: final local/demo checklist.
 
 ## Project Structure
 
@@ -382,6 +466,6 @@ python -m pytest
 3. Stage 3: deterministic agent toolkit for consulting workflows.
 4. Stage 4: LLM provider layer with mock mode and optional Bedrock Converse.
 5. Stage 5: MCP-style tool interface with JSON-RPC, discovery and tool execution.
-6. Stage 6: stronger retrieval evaluation and prompt templates.
-7. Stage 7: feedback analysis pipeline and security questionnaire improvements.
-8. Stage 8: evaluation, observability, AWS architecture and deployment blueprint.
+6. Stage 6: presentation polish, demo script, architecture docs and production plan.
+7. Stage 7: stronger retrieval evaluation and prompt templates.
+8. Stage 8: observability, auth, official MCP SDK and AWS deployment blueprint.
