@@ -4,9 +4,9 @@ Portfolio project for an AI Engineer Jr/Pleno interview context, inspired by AWS
 
 The goal is to simulate a GenAI delivery copilot for a consulting team: a multi-tenant platform that combines RAG with sources, AI agents with tools, feedback analysis, security questionnaire support, status reports, cost estimates, evaluation and an AWS-ready architecture.
 
-## Current Stage: Stage 4 LLM Provider Layer
+## Current Stage: Stage 5 MCP-Style Tool Interface
 
-This repository is currently in Stage 4. The implementation includes a local RAG foundation, a deterministic agent toolkit and an LLM provider layer with mock mode by default plus optional Amazon Bedrock Converse support. It intentionally does not include LangGraph agents, MCP or AWS deployment yet.
+This repository is currently in Stage 5. The implementation includes a local RAG foundation, a deterministic agent toolkit, an LLM provider layer with mock mode by default plus optional Amazon Bedrock Converse support, and an MCP-style tool interface. It intentionally does not include LangGraph agents or AWS deployment yet.
 
 Stage 1 delivered:
 
@@ -41,9 +41,16 @@ Stage 4 adds:
 - RAG answer generation through the configured provider, with extractive fallback.
 - Manual Bedrock smoke script under `scripts/test_bedrock.py`.
 
+Stage 5 adds:
+
+- An MCP-style JSON-RPC endpoint for tool discovery and execution.
+- Tool definitions with JSON input schemas.
+- Demo endpoints for listing and calling tools.
+- Documentation explaining that this is MCP-compatible in style, not a full official MCP SDK server.
+
 ## Why Local Deterministic Mode
 
-The default `LLM_PROVIDER=mock` does not call external services. It produces deterministic local responses from the retrieved context and simulates token usage. The agent also does not use autonomous planning yet; it routes known task types to explicit tools. This keeps the project easy to run locally, testable and demo-friendly before adding production Bedrock workflows, MCP or LangGraph.
+The default `LLM_PROVIDER=mock` does not call external services. It produces deterministic local responses from the retrieved context and simulates token usage. The agent also does not use autonomous planning yet; it routes known task types to explicit tools. The MCP-style layer exposes those tools with JSON schemas and JSON-RPC shaped calls, but it is not a full official MCP server. This keeps the project easy to run locally, testable and demo-friendly before adding production Bedrock workflows, official MCP SDK support or LangGraph.
 
 In a later AWS-ready stage, this layer can be replaced with:
 
@@ -52,7 +59,7 @@ In a later AWS-ready stage, this layer can be replaced with:
 - OpenSearch Serverless, Aurora pgvector or another managed vector store instead of local JSON.
 - Bedrock chat/inference models for grounded final answers. Stage 4 already includes an optional Bedrock Converse provider for manual testing.
 - LangGraph for multi-step planning and stateful workflows.
-- MCP tools for external systems such as ticketing, CRM, documents or cloud APIs.
+- Official MCP tools/resources for external systems such as ticketing, CRM, documents or cloud APIs.
 
 ## Planned Architecture
 
@@ -75,6 +82,7 @@ app/
   core/              # settings and tenant data loading
   models/            # Pydantic schemas
   agent/             # deterministic tools and task orchestrator
+  mcp_server/        # MCP-style JSON-RPC tool interface
   rag/               # chunking, embeddings, vector store and RAG service
   main.py            # FastAPI application
 data/
@@ -111,6 +119,9 @@ http://127.0.0.1:8000/docs
 | POST | `/tenants/{tenant_id}/rag/ask` | Retrieves relevant chunks and returns an extractive answer with sources. |
 | POST | `/tenants/{tenant_id}/agent/run` | Runs one deterministic agent task for the tenant. |
 | POST | `/llm/test` | Tests the configured LLM provider. |
+| POST | `/mcp/rpc` | MCP-style JSON-RPC endpoint for initialize, tools/list and tools/call. |
+| GET | `/mcp/tools` | Demo endpoint for listing the MCP-style tool catalog. |
+| POST | `/mcp/tools/{tool_name}/call` | Demo endpoint for calling one MCP-style tool. |
 
 ## LLM Provider Configuration
 
@@ -292,6 +303,63 @@ curl -X POST http://127.0.0.1:8000/tenants/tenant_acme/agent/run ^
   -d "{\"task_type\":\"well_architected_assessment\",\"payload\":{}}"
 ```
 
+## MCP-Style Tool Interface
+
+The project includes an MCP-style interface for tool discovery and execution. It is intentionally lightweight and didactic: it follows JSON-RPC and MCP tool concepts, but it is not a complete certified MCP server and does not use the official MCP SDK yet.
+
+Main endpoint:
+
+```text
+POST /mcp/rpc
+```
+
+Supported methods:
+
+- `initialize`
+- `tools/list`
+- `tools/call`
+
+Demo endpoints:
+
+```text
+GET /mcp/tools
+POST /mcp/tools/{tool_name}/call
+```
+
+PowerShell examples:
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri "http://127.0.0.1:8000/mcp/rpc" `
+  -ContentType "application/json" `
+  -Body '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{}}'
+```
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri "http://127.0.0.1:8000/mcp/rpc" `
+  -ContentType "application/json" `
+  -Body '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}'
+```
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri "http://127.0.0.1:8000/mcp/rpc" `
+  -ContentType "application/json" `
+  -Body '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"knowledge_search","arguments":{"tenant_id":"tenant_acme","question":"Does the platform expose APIs for integrations?","top_k":3}}}'
+```
+
+```powershell
+Invoke-RestMethod -Method Post `
+  -Uri "http://127.0.0.1:8000/mcp/tools/cost_estimate/call" `
+  -ContentType "application/json" `
+  -Body '{"input_tokens":1000,"output_tokens":500}'
+```
+
+This is relevant for AI engineering roles because production agents need controlled tool contracts, input schemas, structured outputs, tenant boundaries and predictable execution paths. It demonstrates the architecture needed before plugging in a full MCP server, LangGraph workflow or Bedrock agent.
+
+More detail: see `docs/mcp_interface.md`.
+
 ## How This Maps To AWS Consulting Workflows
 
 - Knowledge search maps to consultant Q&A over client-approved project documentation.
@@ -313,7 +381,7 @@ python -m pytest
 2. Stage 2: local multi-tenant RAG with chunking, embeddings, vector store and extractive answers.
 3. Stage 3: deterministic agent toolkit for consulting workflows.
 4. Stage 4: LLM provider layer with mock mode and optional Bedrock Converse.
-5. Stage 5: stronger retrieval evaluation and prompt templates.
-6. Stage 6: feedback analysis pipeline and customer-facing insights.
-7. Stage 7: security questionnaire assistant improvements.
+5. Stage 5: MCP-style tool interface with JSON-RPC, discovery and tool execution.
+6. Stage 6: stronger retrieval evaluation and prompt templates.
+7. Stage 7: feedback analysis pipeline and security questionnaire improvements.
 8. Stage 8: evaluation, observability, AWS architecture and deployment blueprint.

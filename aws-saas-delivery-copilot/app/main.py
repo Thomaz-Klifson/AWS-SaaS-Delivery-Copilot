@@ -5,6 +5,9 @@ from app.core.config import settings
 from app.core.tenant_loader import get_tenant_summary
 from app.llm.factory import get_llm_provider
 from app.llm.provider import LLMResponse
+from app.mcp_server.registry import list_tools
+from app.mcp_server.schemas import JsonRpcRequest, JsonRpcResponse
+from app.mcp_server.server import call_tool_by_name, handle_mcp_request
 from app.models.schemas import (
     AgentTaskRequest,
     AgentTaskResponse,
@@ -86,4 +89,22 @@ def llm_test(request: LLMTestRequest) -> LLMResponse:
             max_tokens=120,
         )
     except (RuntimeError, ValueError) as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.post("/mcp/rpc", response_model=JsonRpcResponse)
+def mcp_rpc(request: JsonRpcRequest) -> JsonRpcResponse:
+    return handle_mcp_request(request)
+
+
+@app.get("/mcp/tools")
+def mcp_tools():
+    return {"tools": [tool.model_dump(by_alias=True) for tool in list_tools()]}
+
+
+@app.post("/mcp/tools/{tool_name}/call")
+def mcp_tool_call(tool_name: str, arguments: dict):
+    try:
+        return call_tool_by_name(tool_name, arguments)
+    except ValueError as error:
         raise HTTPException(status_code=400, detail=str(error)) from error
