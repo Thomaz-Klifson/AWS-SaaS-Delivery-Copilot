@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from app.core.tenant_loader import PROJECT_ROOT, get_tenant_path, read_documents
+from app.llm.factory import get_llm_provider
 from app.models.schemas import RagAskResponse, RagIngestResponse, RagSource, RetrievedChunk
 from app.rag.chunking import TextChunk, chunk_text
 from app.rag.vector_store import LocalVectorStore
@@ -40,9 +41,13 @@ def ask_tenant_question(tenant_id: str, question: str, top_k: int = 3) -> RagAsk
         for match in matches
     ]
     sources = _unique_sources(retrieved_chunks)
+    answer = _generate_grounded_answer(
+        question=question,
+        retrieved_chunks=retrieved_chunks,
+    )
 
     return RagAskResponse(
-        answer=_build_extractive_answer(retrieved_chunks),
+        answer=answer,
         tenant_id=tenant_id,
         question=question,
         sources=sources,
@@ -107,4 +112,52 @@ def _build_extractive_answer(chunks: list[RetrievedChunk]) -> str:
     return (
         "Extractive draft answer based only on retrieved local sources. "
         f"{joined_excerpts}"
+    )
+
+
+def _generate_grounded_answer(question: str, retrieved_chunks: list[RetrievedChunk]) -> str:
+    fallback_answer = _build_extractive_answer(retrieved_chunks)
+    if not retrieved_chunks:
+        return fallback_answer
+
+    try:
+        provider = get_llm_provider()
+        response = provider.generate(
+            system_prompt=_rag_system_prompt(),
+            user_prompt=_rag_user_prompt(question, retrieved_chunks),
+            temperature=0.2,
+            max_tokens=700,
+        )
+        return response.text or fallback_answer
+    except Exception as error:
+        return f"{fallback_answer}\n\nLLM provider fallback reason: {error}"
+
+
+def _rag_system_prompt() -> str:
+    return (
+        "You are a grounded AWS SaaS delivery copilot. Answer only from the provided "
+        "sources. Do not invent facts. If the context is insufficient, say there is "
+        "not enough information. Cite source file names in the answer."
+    )
+
+
+def _rag_user_prompt(question: str, retrieved_chunks: list[RetrievedChunk]) -> str:
+    context_blocks = []
+    for chunk in retrieved_chunks:
+        context_blocks.append(
+            f"Source: {chunk.source_file}\n"
+            f"Chunk: {chunk.chunk_id}\n"
+            f"Score: {chunk.score}\n"
+            f"{chunk.text}"
+        )
+    context = "\n\n".join(context_blocks)
+
+    return (
+        f"Question:\n{question}\n\n"
+        "Context:\n"
+        f"{context}\n\n"
+        "Instructions:\n"
+        "- Answer only with the context above.\n"
+        "- Cite source file names in the answer.\n"
+        "- If there is not enough information, say so clearly."
     )

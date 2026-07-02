@@ -119,3 +119,7 @@ class AgentTaskResponse(BaseModel):
     tenant_id: str
     task_type: str
     tool_result: ToolResult
+
+
+class LLMTestRequest(BaseModel):
+    prompt: str = Field(min_length=1)

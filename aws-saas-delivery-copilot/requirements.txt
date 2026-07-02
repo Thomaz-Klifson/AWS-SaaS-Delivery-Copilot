@@ -3,5 +3,6 @@ uvicorn[standard]
 pydantic
 pydantic-settings
 python-dotenv
+boto3
 pytest
 httpx

@@ -3,10 +3,13 @@ from fastapi import FastAPI, HTTPException
 from app.agent.orchestrator import run_agent_task
 from app.core.config import settings
 from app.core.tenant_loader import get_tenant_summary
+from app.llm.factory import get_llm_provider
+from app.llm.provider import LLMResponse
 from app.models.schemas import (
     AgentTaskRequest,
     AgentTaskResponse,
     HealthResponse,
+    LLMTestRequest,
     RagAskRequest,
     RagAskResponse,
     RagIngestResponse,
@@ -69,4 +72,18 @@ def agent_run(tenant_id: str, request: AgentTaskRequest) -> AgentTaskResponse:
             payload=request.payload,
         )
     except ValueError as error:
+        raise HTTPException(status_code=400, detail=str(error)) from error
+
+
+@app.post("/llm/test", response_model=LLMResponse)
+def llm_test(request: LLMTestRequest) -> LLMResponse:
+    try:
+        provider = get_llm_provider()
+        return provider.generate(
+            system_prompt="You are a concise assistant for local provider testing.",
+            user_prompt=f"Question:\n{request.prompt}\n\nContext:\nManual provider test.",
+            temperature=0.2,
+            max_tokens=120,
+        )
+    except (RuntimeError, ValueError) as error:
         raise HTTPException(status_code=400, detail=str(error)) from error

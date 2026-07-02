@@ -4,9 +4,9 @@ Portfolio project for an AI Engineer Jr/Pleno interview context, inspired by AWS
 
 The goal is to simulate a GenAI delivery copilot for a consulting team: a multi-tenant platform that combines RAG with sources, AI agents with tools, feedback analysis, security questionnaire support, status reports, cost estimates, evaluation and an AWS-ready architecture.
 
-## Current Stage: Stage 3 Deterministic Agent Toolkit
+## Current Stage: Stage 4 LLM Provider Layer
 
-This repository is currently in Stage 3. The implementation includes a local RAG foundation and a deterministic agent toolkit for AWS/SaaS consulting workflows. It intentionally does not include LangGraph agents, MCP, Bedrock calls or AWS deployment yet.
+This repository is currently in Stage 4. The implementation includes a local RAG foundation, a deterministic agent toolkit and an LLM provider layer with mock mode by default plus optional Amazon Bedrock Converse support. It intentionally does not include LangGraph agents, MCP or AWS deployment yet.
 
 Stage 1 delivered:
 
@@ -32,16 +32,25 @@ Stage 3 adds:
 - A FastAPI endpoint for running agent tasks.
 - Documentation for how each tool maps to AWS/SaaS consulting workflows.
 
+Stage 4 adds:
+
+- `app/llm` provider abstraction.
+- `MockLLMProvider` for deterministic local execution and automated tests.
+- `BedrockConverseProvider` using `boto3` and the Bedrock Runtime Converse API.
+- `/llm/test` endpoint for manual provider checks.
+- RAG answer generation through the configured provider, with extractive fallback.
+- Manual Bedrock smoke script under `scripts/test_bedrock.py`.
+
 ## Why Local Deterministic Mode
 
-The current RAG answer generation does not call an LLM. It builds a draft answer from the most relevant retrieved chunks. The agent also does not use autonomous planning yet; it routes known task types to explicit tools. This keeps the project easy to run locally, testable and demo-friendly before adding Bedrock, MCP or LangGraph.
+The default `LLM_PROVIDER=mock` does not call external services. It produces deterministic local responses from the retrieved context and simulates token usage. The agent also does not use autonomous planning yet; it routes known task types to explicit tools. This keeps the project easy to run locally, testable and demo-friendly before adding production Bedrock workflows, MCP or LangGraph.
 
 In a later AWS-ready stage, this layer can be replaced with:
 
 - Amazon Bedrock embeddings instead of local hashing embeddings.
 - S3 as the source document store instead of local tenant folders.
 - OpenSearch Serverless, Aurora pgvector or another managed vector store instead of local JSON.
-- Bedrock chat/inference models for grounded final answers.
+- Bedrock chat/inference models for grounded final answers. Stage 4 already includes an optional Bedrock Converse provider for manual testing.
 - LangGraph for multi-step planning and stateful workflows.
 - MCP tools for external systems such as ticketing, CRM, documents or cloud APIs.
 
@@ -101,6 +110,62 @@ http://127.0.0.1:8000/docs
 | POST | `/tenants/{tenant_id}/rag/ingest` | Chunks and indexes tenant documents into the local vector store. |
 | POST | `/tenants/{tenant_id}/rag/ask` | Retrieves relevant chunks and returns an extractive answer with sources. |
 | POST | `/tenants/{tenant_id}/agent/run` | Runs one deterministic agent task for the tenant. |
+| POST | `/llm/test` | Tests the configured LLM provider. |
+
+## LLM Provider Configuration
+
+Default local mode:
+
+```env
+LLM_PROVIDER=mock
+AWS_REGION=us-east-1
+BEDROCK_MODEL_ID=
+S3_BUCKET_NAME=
+```
+
+Optional Bedrock mode:
+
+```env
+LLM_PROVIDER=bedrock
+AWS_REGION=us-east-1
+BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20240620-v1:0
+```
+
+No AWS credentials are stored in this project. Use standard AWS configuration methods such as `AWS_PROFILE`, SSO, environment credentials or an attached role.
+
+List available foundation models with AWS CLI:
+
+```bash
+aws bedrock list-foundation-models --region us-east-1
+```
+
+For inference, also confirm model access in the Amazon Bedrock console for the selected region and model.
+
+Test the current provider:
+
+```bash
+curl -X POST http://127.0.0.1:8000/llm/test ^
+  -H "Content-Type: application/json" ^
+  -d "{\"prompt\":\"Say hello in one sentence.\"}"
+```
+
+Automated tests force `LLM_PROVIDER=mock` to avoid AWS cost, credentials and network dependencies.
+
+Manual Bedrock smoke test:
+
+```bash
+set LLM_PROVIDER=bedrock
+set AWS_REGION=us-east-1
+set BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20240620-v1:0
+python scripts\test_bedrock.py
+```
+
+Common Bedrock issues:
+
+- Missing credentials: run `aws sts get-caller-identity` and confirm your profile/session.
+- Model access denied: enable the model in the Bedrock console for the same region.
+- Wrong region: confirm `AWS_REGION` supports the selected model.
+- Invalid model id: compare `BEDROCK_MODEL_ID` with `aws bedrock list-foundation-models`.
 
 ## RAG Usage
 
@@ -244,8 +309,8 @@ python -m pytest
 1. Stage 1: foundation with FastAPI, schemas, local tenant data loading and tests.
 2. Stage 2: local multi-tenant RAG with chunking, embeddings, vector store and extractive answers.
 3. Stage 3: deterministic agent toolkit for consulting workflows.
-4. Stage 4: stronger retrieval evaluation, prompt templates and Bedrock-ready model interfaces.
-5. Stage 5: feedback analysis pipeline and customer-facing insights.
-6. Stage 6: security questionnaire assistant improvements.
-7. Stage 7: evaluation, observability and cost tracking.
-8. Stage 8: AWS architecture and deployment blueprint.
+4. Stage 4: LLM provider layer with mock mode and optional Bedrock Converse.
+5. Stage 5: stronger retrieval evaluation and prompt templates.
+6. Stage 6: feedback analysis pipeline and customer-facing insights.
+7. Stage 7: security questionnaire assistant improvements.
+8. Stage 8: evaluation, observability, AWS architecture and deployment blueprint.
