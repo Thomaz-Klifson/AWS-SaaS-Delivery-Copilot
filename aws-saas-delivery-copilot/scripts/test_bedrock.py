@@ -17,10 +17,10 @@ def main() -> None:
 
     provider = get_llm_provider()
     response = provider.generate(
-        system_prompt="You are a concise AWS SaaS delivery copilot.",
-        user_prompt="Question:\nSay hello in one sentence.\n\nContext:\nManual Bedrock smoke test.",
+        system_prompt="Reply briefly.",
+        user_prompt="Question:\nSay hi.\n\nContext:\nManual Bedrock smoke test.",
         temperature=0.2,
-        max_tokens=120,
+        max_tokens=40,
     )
     print(response.model_dump_json(indent=2))
 

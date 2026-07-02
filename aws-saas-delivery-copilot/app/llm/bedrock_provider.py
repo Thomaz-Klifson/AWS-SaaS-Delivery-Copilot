@@ -86,6 +86,15 @@ def _extract_text(response: dict) -> str:
 def _friendly_client_error(error: ClientError) -> str:
     code = error.response.get("Error", {}).get("Code", "Unknown")
     message = error.response.get("Error", {}).get("Message", str(error))
+    if code == "ThrottlingException":
+        return (
+            f"Bedrock Converse call was throttled ({code}): {message}. "
+            "This usually indicates an account/model quota limit, daily token limit, "
+            "or request throttling in the selected region. If credentials, region and "
+            "BEDROCK_MODEL_ID are correct, this is not necessarily a code error. "
+            "Wait for quota reset, reduce max_tokens/input size, choose another model, "
+            "or request a quota increase."
+        )
     return (
         f"Bedrock Converse call failed ({code}): {message}. "
         "Check AWS credentials, AWS_REGION, BEDROCK_MODEL_ID and whether model access "

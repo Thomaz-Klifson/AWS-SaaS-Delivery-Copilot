@@ -131,7 +131,7 @@ AWS_REGION=us-east-1
 BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20240620-v1:0
 ```
 
-No AWS credentials are stored in this project. Use standard AWS configuration methods such as `AWS_PROFILE`, SSO, environment credentials or an attached role.
+Mock mode is the default to avoid external cost, credentials and network dependency. Bedrock is optional and should be enabled only for manual testing or later AWS-ready runs. No AWS credentials are stored in this project. Use standard AWS configuration methods such as `AWS_PROFILE`, SSO, environment credentials or an attached role.
 
 List available foundation models with AWS CLI:
 
@@ -160,10 +160,13 @@ set BEDROCK_MODEL_ID=anthropic.claude-3-5-sonnet-20240620-v1:0
 python scripts\test_bedrock.py
 ```
 
+The manual Bedrock test can still fail even when the code is correct. Common causes are missing model access, account quota, daily token limits or model-level throttling. `ThrottlingException` specifically means the selected account/model/region is currently limited or throttled; it is not necessarily a bug in the provider implementation.
+
 Common Bedrock issues:
 
 - Missing credentials: run `aws sts get-caller-identity` and confirm your profile/session.
 - Model access denied: enable the model in the Bedrock console for the same region.
+- `ThrottlingException`: wait for daily quota reset, reduce prompt/max tokens, try a smaller/different model or request a quota increase.
 - Wrong region: confirm `AWS_REGION` supports the selected model.
 - Invalid model id: compare `BEDROCK_MODEL_ID` with `aws bedrock list-foundation-models`.
 
